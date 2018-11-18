@@ -419,8 +419,11 @@ def checkRuleConditions(rule, sensor, current_time, ignore_ddx=False):
             if not int(bridge_config[url_pices[1]][url_pices[2]][url_pices[3]][url_pices[4]]) < int(condition["value"]):
                 return [False, 0]
         elif condition["operator"] == "dx":
-            if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
-                return [False, 0]
+            try:
+                if not sensors_state[url_pices[2]][url_pices[3]][url_pices[4]] == current_time:
+                    return [False, 0]
+            except KeyError:
+                dummy = 0
         elif condition["operator"] == "in":
             periods = condition["value"].split('/')
             if condition["value"][0] == "T":
@@ -522,7 +525,6 @@ def sendLightRequest(light, data):
         elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
-            payload.update(data)
 
         elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #Domoticz protocol
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=command&param=switchlight&idx=" + bridge_config["lights_address"][light]["light_id"]
@@ -658,8 +660,12 @@ def sendLightRequest(light, data):
                     del(payload["sat"])
                 if len(payload) != 0:
                     sendRequest(url, method, json.dumps(payload))
-                    sleep(1)
+                    sleep(0.1)
                 if len(color) != 0:
+                    if "transitiontime" in payload:
+                        color["transitiontime"] = payload["transitiontime"]
+                    if "bri" in payload:
+                        color["bri"] = payload["bri"]
                     sendRequest(url, method, json.dumps(color))
             else:
                 sendRequest(url, method, json.dumps(payload))
