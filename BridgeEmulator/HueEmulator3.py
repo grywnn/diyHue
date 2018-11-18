@@ -544,6 +544,7 @@ def sendLightRequest(light, data):
         elif bridge_config["lights_address"][light]["protocol"] in ["hue","deconz"]: #Original Hue light or Deconz light
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/api/" + bridge_config["lights_address"][light]["username"] + "/lights/" + bridge_config["lights_address"][light]["light_id"] + "/state"
             method = 'PUT'
+            payload.update(data)
 
         elif bridge_config["lights_address"][light]["protocol"] == "domoticz": #Domoticz protocol
             url = "http://" + bridge_config["lights_address"][light]["ip"] + "/json.htm?type=command&param=switchlight&idx=" + bridge_config["lights_address"][light]["light_id"]
@@ -679,10 +680,6 @@ def sendLightRequest(light, data):
                     del(payload["sat"])
                 if len(payload) != 0:
                     sendRequest(url, method, json.dumps(payload))
-                    if bridge_config["lights_address"][light]["protocol"] == "deconz":
-                        sleep(0.7)
-                    else:
-                        sleep(0.1)
                 if len(color) != 0:
                     if "transitiontime" in payload:
                         color["transitiontime"] = payload["transitiontime"]
