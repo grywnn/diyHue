@@ -22,11 +22,13 @@ from functions.colors import convert_rgb_xy, convert_xy, hsv_to_rgb
 from functions.html import (description, webform_hue, webform_linkbutton,
                             webform_milight, webformDeconz, webformTradfri)
 from functions.ssdp import ssdpBroadcast, ssdpSearch
+from functions.network import getIpAddress
 from protocols import yeelight
+from protocols import tasmota
 
 debug = False # set this to True in order to see all script actions.
 
-if debug:
+if debug: 
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     ch = logging.StreamHandler(sys.stdout)
@@ -35,19 +37,12 @@ if debug:
     ch.setFormatter(formatter)
     root.addHandler(ch)
 
-protocols = [yeelight]
+protocols = [yeelight, tasmota]
 
 cwd = os.path.split(os.path.abspath(__file__))[0]
 docker = False # Set only to true if using script in Docker container
 
 update_lights_on_startup = False # if set to true all lights will be updated with last know state on startup.
-
-def getIpAddress():
-    if len(sys.argv) == 3:
-       return sys.argv[2]
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    return s.getsockname()[0]
 
 def pretty_json(data):
     return json.dumps(data, sort_keys=True,                  indent=4, separators=(',', ': '))
@@ -90,6 +85,10 @@ def updateConfig():
                     bridge_config["lights"][light].update({"type": "Extended color light", "manufacturername": "Philips", "modelid": "LCT015", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.29.0_r21169"})
                 elif bridge_config["lights"][light]["type"] == "Dimmable light":
                     bridge_config["lights"][light].update({"manufacturername": "Philips", "modelid": "LWB010", "uniqueid": "00:17:88:01:00:" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + ":" + hex(random.randrange(0,255))[2:] + "-0b", "swversion": "1.15.0_r18729"})
+    #set entertainment streaming to inactive on start/restart
+    for group in bridge_config["groups"].keys():
+        if bridge_config["groups"][group]["type"] == "Entertainment":
+            bridge_config["groups"][group]["stream"].update({"active": False, "owner": None})
     #fix timezones bug
     if "values" not in bridge_config["capabilities"]["timezones"]:
         timezones = bridge_config["capabilities"]["timezones"]
@@ -714,6 +713,7 @@ def updateGroupStats(light): #set group stats based on lights status in that gro
 
 def scanForLights(): #scan for ESP8266 lights and strips
     Thread(target=yeelight.discover, args=[bridge_config, new_lights]).start()
+    Thread(target=tasmota.discover, args=[bridge_config, new_lights]).start()
     #return all host that listen on port 80
     device_ips = check_output("nmap  " + getIpAddress() + "/24 -p80 --open -n | grep report | cut -d ' ' -f5", shell=True).decode('utf-8').rstrip("\n").split("\n")
     logging.debug(pretty_json(device_ips))
