@@ -169,6 +169,10 @@ def sendLightRequest(light, data, lights, addresses):
                     if addresses[light]["protocol"] == "deconz":
                         sleep(0.7)
                 if len(color) != 0:
+                    if "transitiontime" in payload:
+                        color["transitiontime"] = payload["transitiontime"]
+                    if "bri" in payload and not "ct" in payload:
+                        color["bri"] = payload["bri"]
                     sendRequest(url, method, json.dumps(color))
             else:
                 sendRequest(url, method, json.dumps(payload))
