@@ -725,7 +725,7 @@ def sendLightRequest(light, data):
                 if len(color) != 0:
                     if "transitiontime" in payload:
                         color["transitiontime"] = payload["transitiontime"]
-                    if "bri" in payload:
+                    if "bri" in payload and not "ct" in payload:
                         color["bri"] = payload["bri"]
                     sendRequest(url, method, json.dumps(color))
             else:
