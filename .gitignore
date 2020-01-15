@@ -8,6 +8,7 @@ BridgeEmulator/config*
 Lights/*
 Devices/*
 Sensors/*
+config.json
 
 # Virtual env stuff
 /pyvenv.cfg
